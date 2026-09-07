@@ -1,0 +1,24 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "Before performing any task, always load the relevant skill using the skill tool. Check available skills first, then load the most relevant one for the current task."
+  ],
+  "skills": {
+    "paths": [".agents/skills"]
+  },
+  "mcp": {
+    "yaak": {
+      "type": "local",
+      "enabled": true,
+      "command": ["npx", "-y", "mcp-remote", "http://127.0.0.1:64343/mcp"]
+    },
+    "github": {
+      "type": "local",
+      "enabled": true,
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
+      "environment": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    }
+  }
+}
