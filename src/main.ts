@@ -9,8 +9,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 
-import type { Env } from './config/env.validation';
-import { AllExceptionsFilter } from './filters/all-exceptions.filter';
+import type { Env } from './common/config/env.validation';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
