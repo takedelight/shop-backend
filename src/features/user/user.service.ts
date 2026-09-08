@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { UserModel } from './core/user.model';
 import {
@@ -11,6 +11,8 @@ import { UserMapper } from './mappers/user.mapper';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     @Inject(USER_REPOSITORY) private readonly userRepo: IUserRepository,
   ) {}
@@ -31,6 +33,7 @@ export class UserService {
   }
 
   async create(body: CreateUserDto) {
+    this.logger.log(`Creating user: ${body.email}`);
     const data = UserModel.create({
       username: body.username,
       email: body.email,
@@ -41,6 +44,7 @@ export class UserService {
   }
 
   async update(userId: string, dto: UpdateUserDto) {
+    this.logger.log(`Updating user: ${userId}`);
     const existing = await this.userRepo.findById(userId);
 
     if (dto.password) {
@@ -64,6 +68,7 @@ export class UserService {
   }
 
   async delete(userId: string) {
+    this.logger.log(`Deleting user: ${userId}`);
     return this.userRepo.delete(userId);
   }
 }
