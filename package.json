@@ -1,10 +1,10 @@
 {
   "name": "server",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
   "private": true,
+  "description": "",
   "license": "UNLICENSED",
+  "author": "",
   "scripts": {
     "build": "nest build",
     "fmt": "oxfmt --write \"src/**/*.ts\" ",
@@ -22,6 +22,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
+    "db:seed": "bun run --env-file=.env src/infrastructure/database/seed.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -32,6 +33,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "^12.0.1",
     "@nestjs/throttler": "^6.5.0",
+    "argon2": "^0.45.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie-parser": "^1.4.7",
@@ -69,27 +71,30 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3"
   },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "oxfmt --check",
+      "oxlint"
+    ]
+  },
   "jest": {
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
     "moduleFileExtensions": [
       "js",
       "json",
       "ts"
     ],
     "rootDir": "src",
+    "testEnvironment": "node",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
-  },
-  "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "oxfmt --check",
-      "oxlint"
+    "transformIgnorePatterns": [
+      "node_modules/(?!(@nestjs|reflect-metadata|rxjs)/)"
     ]
   }
 }
