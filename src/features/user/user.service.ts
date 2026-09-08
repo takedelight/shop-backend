@@ -37,7 +37,7 @@ export class UserService {
     const data = UserModel.create({
       username: body.username,
       email: body.email,
-      password: body.password,
+      password: await argon2.hash(body.password),
     });
 
     return this.userRepo.create(data);
