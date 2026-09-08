@@ -7,6 +7,7 @@ import {
 } from './core/user.repository.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserMapper } from './mappers/user.mapper';
 
 @Injectable()
 export class UserService {
@@ -15,15 +16,18 @@ export class UserService {
   ) {}
 
   async findAll() {
-    return this.userRepo.findAll();
+    const users = await this.userRepo.findAll();
+    return users.map(UserMapper.toResponse);
   }
 
   async findById(userId: string) {
-    return this.userRepo.findById(userId);
+    const user = await this.userRepo.findById(userId);
+    return UserMapper.toResponse(user);
   }
 
   async findByEmail(email: string) {
-    return this.userRepo.findByEmail(email);
+    const user = await this.userRepo.findByEmail(email);
+    return UserMapper.toResponse(user);
   }
 
   async create(body: CreateUserDto) {
@@ -57,5 +61,9 @@ export class UserService {
     });
 
     return this.userRepo.update(updated);
+  }
+
+  async delete(userId: string) {
+    return this.userRepo.delete(userId);
   }
 }
