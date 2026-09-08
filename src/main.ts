@@ -11,6 +11,7 @@ import helmet from 'helmet';
 
 import type { Env } from './common/config/env.validation';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
+import { DrizzleExceptionFilter } from './common/filters/drizzle-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -24,7 +25,7 @@ async function bootstrap() {
     }),
   );
 
-  app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(new AllExceptionsFilter(), new DrizzleExceptionFilter());
 
   app.use(helmet());
   app.use(cookieParser());
