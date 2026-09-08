@@ -31,5 +31,5 @@ jobs:
       - name: Run Linting
         run: bun lint
 
-      # - name: Run Unit Tests
-      #   run: bun test --passWithNoTests
+      - name: Run Unit Tests
+        run: bun test
