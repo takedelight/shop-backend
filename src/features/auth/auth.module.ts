@@ -2,8 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { StorageModule } from 'src/infrastructure/storage/storage.module';
-import { USER_REPOSITORY } from '../user/core/user.repository.interface';
-import { UserRepository } from '../user/repository/user.repository';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -22,14 +20,6 @@ import { JwtStrategy } from './strategy/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [
-    AuthService,
-    JwtStrategy,
-    GoogleStrategy,
-    {
-      provide: USER_REPOSITORY,
-      useClass: UserRepository,
-    },
-  ],
+  providers: [AuthService, JwtStrategy, GoogleStrategy],
 })
 export class AuthModule {}

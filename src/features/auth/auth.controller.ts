@@ -30,7 +30,6 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() body: LoginDto,
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const tokens = await this.authService.login(body);
@@ -42,7 +41,6 @@ export class AuthController {
   @Post('register')
   async register(
     @Body() body: RegisterDto,
-    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
     const tokens = await this.authService.register(body);

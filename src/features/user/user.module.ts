@@ -13,5 +13,6 @@ import { UserService } from './user.service';
       useClass: UserRepository,
     },
   ],
+  exports: [USER_REPOSITORY],
 })
 export class UserModule {}
