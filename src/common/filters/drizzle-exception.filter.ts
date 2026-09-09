@@ -3,65 +3,96 @@ import {
   Catch,
   ExceptionFilter,
   HttpStatus,
-  NotFoundException,
+  Logger,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { DrizzleError, DrizzleQueryError } from 'drizzle-orm';
+import { Request, Response } from 'express';
 import { DatabaseError } from 'pg';
 
-@Catch(DatabaseError, NotFoundException)
+type ErrorDetail = { status: HttpStatus; error: string; message: string };
+
+const PG_ERROR_MAP: Record<string, ErrorDetail> = {
+  '23505': {
+    status: HttpStatus.CONFLICT,
+    error: 'Conflict',
+    message: 'Record already exists',
+  },
+  '23503': {
+    status: HttpStatus.NOT_FOUND,
+    error: 'Not Found',
+    message: 'Related resource not found',
+  },
+  '23502': {
+    status: HttpStatus.BAD_REQUEST,
+    error: 'Bad Request',
+    message: 'Required field is missing',
+  },
+  '22P02': {
+    status: HttpStatus.BAD_REQUEST,
+    error: 'Bad Request',
+    message: 'Invalid input format',
+  },
+};
+
+const DEFAULT_DB_ERROR: ErrorDetail = {
+  status: HttpStatus.INTERNAL_SERVER_ERROR,
+  error: 'Internal Server Error',
+  message: 'Database error',
+};
+
+@Catch(DrizzleQueryError, DrizzleError, DatabaseError)
 export class DrizzleExceptionFilter implements ExceptionFilter {
-  catch(exception: DatabaseError | NotFoundException, host: ArgumentsHost) {
+  private readonly logger = new Logger(DrizzleExceptionFilter.name);
+
+  catch(
+    exception: DrizzleError | DrizzleQueryError | DatabaseError,
+    host: ArgumentsHost,
+  ) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
-    if (exception instanceof NotFoundException) {
-      return response.status(HttpStatus.NOT_FOUND).json({
-        statusCode: HttpStatus.NOT_FOUND,
-        error: 'Not Found',
-        message: exception.message || 'Resource not found',
-      });
+    const { status, error, message } = this.resolveErrorDetails(exception);
+
+    if (status >= 500) {
+      this.logger.error(
+        `${request.method} ${request.url}`,
+        exception.stack || String(exception),
+      );
+    } else {
+      this.logger.warn(
+        `${request.method} ${request.url} ${status} - ${message}`,
+      );
     }
 
-    switch (exception.code) {
-      case '23505': {
-        return response.status(HttpStatus.CONFLICT).json({
-          statusCode: HttpStatus.CONFLICT,
-          error: 'Conflict',
-          message: 'Record already exists',
-        });
-      }
+    return response.status(status).json({
+      statusCode: status,
+      error,
+      message,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+    });
+  }
 
-      case '23503': {
-        return response.status(HttpStatus.NOT_FOUND).json({
-          statusCode: HttpStatus.NOT_FOUND,
-          error: 'Not Found',
-          message: 'Related resource not found',
-        });
+  private resolveErrorDetails(
+    exception: DrizzleError | DrizzleQueryError | DatabaseError,
+  ): ErrorDetail {
+    if (exception instanceof DrizzleQueryError) {
+      const dbError = exception.cause;
+      if (dbError instanceof DatabaseError) {
+        return PG_ERROR_MAP[dbError.code ?? ''] ?? DEFAULT_DB_ERROR;
       }
-
-      case '23502': {
-        return response.status(HttpStatus.BAD_REQUEST).json({
-          statusCode: HttpStatus.BAD_REQUEST,
-          error: 'Bad Request',
-          message: 'Required field is missing',
-        });
-      }
-
-      case '22P02': {
-        return response.status(HttpStatus.BAD_REQUEST).json({
-          statusCode: HttpStatus.BAD_REQUEST,
-          error: 'Bad Request',
-          message: 'Invalid input format',
-        });
-      }
-
-      default: {
-        return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          error: 'Internal Server Error',
-          message: 'Database error',
-        });
-      }
+      return DEFAULT_DB_ERROR;
     }
+
+    if (exception instanceof DrizzleError) {
+      const dbError = exception.cause;
+      if (dbError instanceof DatabaseError) {
+        return PG_ERROR_MAP[dbError.code ?? ''] ?? DEFAULT_DB_ERROR;
+      }
+      return DEFAULT_DB_ERROR;
+    }
+
+    return PG_ERROR_MAP[exception.code ?? ''] ?? DEFAULT_DB_ERROR;
   }
 }
