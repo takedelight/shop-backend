@@ -141,10 +141,30 @@ describe('ProductService', () => {
         inStock: true,
         stockQuantity: 1,
       };
-      mockProductRepository.create.mockResolvedValue(undefined);
+      const createdProduct = {
+        id: 'new-123',
+        name: 'New Product',
+        price: 99,
+        description: 'New',
+        imageKeys: [],
+        inStock: true,
+        stockQuantity: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockProductRepository.create.mockResolvedValue(createdProduct);
 
-      await target.create(dto);
+      const result = await target.create(dto);
 
+      expect(result).toEqual({
+        id: 'new-123',
+        name: 'New Product',
+        price: 99,
+        description: 'New',
+        imageKeys: [],
+        inStock: true,
+        stockQuantity: 1,
+      });
       expect(mockProductRepository.create).toHaveBeenCalledTimes(1);
       const createdModel = mockProductRepository.create.mock.calls[0][0];
       expect(createdModel.name).toBe('New Product');
@@ -160,6 +180,18 @@ describe('ProductService', () => {
         inStock: false,
         stockQuantity: 0,
       };
+      const createdProduct = {
+        id: 'full-123',
+        name: 'Full Product',
+        price: 150,
+        description: 'Full Desc',
+        imageKeys: ['k1', 'k2'],
+        inStock: false,
+        stockQuantity: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockProductRepository.create.mockResolvedValue(createdProduct);
 
       await target.create(dto);
 

@@ -30,7 +30,8 @@ export class ProductService {
   async create(dto: CreateProductDto) {
     this.logger.log(`Creating product: ${dto.name}`);
     const data = ProductModel.create(dto);
-    return this.productRepo.create(data);
+    const product = await this.productRepo.create(data);
+    return ProductMapper.toResponse(product);
   }
 
   async update(id: string, dto: UpdateProductDto) {
