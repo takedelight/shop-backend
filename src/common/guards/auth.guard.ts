@@ -1,6 +1,11 @@
-import { ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard as PassportAuthGuard } from '@nestjs/passport';
+import type { Request } from 'express';
 import { Observable } from 'rxjs';
 import { IS_PUBLIC_KEY } from '../decorators/is-public.decorator';
 
@@ -20,6 +25,16 @@ export class AuthGuard extends PassportAuthGuard('jwt') {
 
     if (isPublic) {
       return true;
+    }
+
+    const request = context.switchToHttp().getRequest<Request>();
+
+    const accessToken =
+      request.cookies?.accessToken ??
+      request.headers?.authorization?.split(' ')[1];
+
+    if (!accessToken) {
+      throw new UnauthorizedException('Access token is missing');
     }
 
     return super.canActivate(context);
