@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from 'src/infrastructure/database/database.module';
@@ -23,6 +23,10 @@ export class UserRepository implements IUserRepository {
       .from(users)
       .where(eq(users.id, userId));
 
+    if (!row) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+
     return UserMapper.toDomain(row);
   }
 
@@ -32,11 +36,37 @@ export class UserRepository implements IUserRepository {
       .from(users)
       .where(eq(users.email, email));
 
+    if (!row) {
+      throw new NotFoundException(`User with email ${email} not found`);
+    }
+
     return UserMapper.toDomain(row);
   }
 
-  async create(user: UserModel): Promise<void> {
-    await this.db.insert(users).values(UserMapper.toPersistence(user));
+  async create(user: UserModel): Promise<UserModel> {
+    const [row] = await this.db
+      .insert(users)
+      .values(UserMapper.toPersistence(user))
+      .returning();
+
+    return UserMapper.toDomain(row);
+  }
+
+  async upsert(user: UserModel): Promise<UserModel> {
+    const insertData = UserMapper.toPersistence(user);
+
+    const { id: _id, createdAt: _createdAt, ...rest } = insertData;
+
+    const [row] = await this.db
+      .insert(users)
+      .values(insertData)
+      .onConflictDoUpdate({
+        target: [users.provider, users.providerId],
+        set: rest,
+      })
+      .returning();
+
+    return UserMapper.toDomain(row);
   }
 
   async update(user: UserModel): Promise<void> {

@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 
-type UserRole = 'admin' | 'user';
-type AuthProvider = 'google' | 'local';
+export type UserRole = 'admin' | 'user';
+export type AuthProvider = 'google' | 'local';
 
 interface UserProps {
   id: string;

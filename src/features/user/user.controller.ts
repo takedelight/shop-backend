@@ -1,15 +1,17 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   Patch,
-  Body,
-  Logger,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { UserService } from './user.service';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import type { JwtPayload } from 'src/common/types/jwt-payload.type';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserService } from './user.service';
 
 @ApiTags('User')
 @Controller('user')
@@ -24,10 +26,10 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @Get(':id')
-  findById(@Param('id') id: string) {
-    this.logger.log(`GET /user/${id}`);
-    return this.userService.findById(id);
+  @Get('me')
+  findById(@CurrentUser() payload: JwtPayload) {
+    this.logger.log(`GET /user/${payload.sub}`);
+    return this.userService.findById(payload.sub);
   }
 
   @Patch(':id')
