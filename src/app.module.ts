@@ -9,6 +9,7 @@ import { AuthModule } from './features/auth/auth.module';
 import { UserModule } from './features/user/user.module';
 import { DrizzleModule } from './infrastructure/database/database.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
+import { ProductModule } from './features/product/product.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RedisModule } from './infrastructure/redis/redis.module';
     RedisModule,
     UserModule,
     AuthModule,
+    ProductModule,
   ],
   providers: [
     {
