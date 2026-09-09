@@ -1,7 +1,8 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { verify } from 'argon2';
+import { hash, verify } from 'argon2';
+import { JwtPayload } from 'src/common/types/jwt-payload.type';
 import { UserModel, UserRole } from '../user/core/user.model';
 import {
   type IUserRepository,
@@ -27,6 +28,7 @@ export class AuthService {
   async register(dto: RegisterDto): Promise<AuthTokens> {
     const data = UserModel.create({
       ...dto,
+      password: await hash(dto.password),
     });
 
     const user = await this.userRepo.create(data);
@@ -46,9 +48,7 @@ export class AuthService {
     const isPasswordValid = await verify(user.password, dto.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException(
-        'errors.server.invalid_credentials_error',
-      );
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     return this.generateTokens(user.id, user.role);
@@ -60,18 +60,18 @@ export class AuthService {
     }
 
     try {
-      const payload: { sessionId: string } = await this.jwtService.verifyAsync(
+      const payload: JwtPayload = await this.jwtService.verifyAsync(
         refreshToken,
         {
           secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
         },
       );
 
-      const user = await this.userRepo.findById(payload.sessionId);
+      const user = await this.userRepo.findById(payload.sub);
 
       return this.generateTokens(user.id, user.role);
     } catch {
-      throw new UnauthorizedException('errors.server.invalid_refresh_token');
+      throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
