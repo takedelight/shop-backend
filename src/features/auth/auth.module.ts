@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { StorageModule } from 'src/infrastructure/storage/storage.module';
 import { USER_REPOSITORY } from '../user/core/user.repository.interface';
 import { UserRepository } from '../user/repository/user.repository';
 import { UserModule } from '../user/user.module';
@@ -12,6 +13,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 @Module({
   imports: [
     UserModule,
+    StorageModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

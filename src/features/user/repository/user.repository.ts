@@ -52,6 +52,23 @@ export class UserRepository implements IUserRepository {
     return UserMapper.toDomain(row);
   }
 
+  async upsert(user: UserModel): Promise<UserModel> {
+    const insertData = UserMapper.toPersistence(user);
+
+    const { id: _id, createdAt: _createdAt, ...rest } = insertData;
+
+    const [row] = await this.db
+      .insert(users)
+      .values(insertData)
+      .onConflictDoUpdate({
+        target: [users.provider, users.providerId],
+        set: rest,
+      })
+      .returning();
+
+    return UserMapper.toDomain(row);
+  }
+
   async update(user: UserModel): Promise<void> {
     await this.db
       .update(users)

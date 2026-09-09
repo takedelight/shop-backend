@@ -1,16 +1,20 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Post,
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { AuthGuard } from '@nestjs/passport';
 import type { Request, Response } from 'express';
 import { Public } from 'src/common/decorators/is-public.decorator';
+import { OAuthUserDto } from '../user/dto/oauth-user.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -44,6 +48,26 @@ export class AuthController {
     const tokens = await this.authService.register(body);
 
     this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+  }
+
+  @Public()
+  @UseGuards(AuthGuard('google'))
+  @Get('google')
+  async google() {}
+
+  @Public()
+  @UseGuards(AuthGuard('google'))
+  @Get('google/callback')
+  async googleCallback(@Req() req: Request, @Res() res: Response) {
+    const body = req.user as unknown as OAuthUserDto;
+
+    const tokens = await this.authService.upsert(body);
+
+    this.setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+    return res.redirect(
+      this.configService.getOrThrow<string>('CORS_ORIGINS')[0],
+    );
   }
 
   @Public()

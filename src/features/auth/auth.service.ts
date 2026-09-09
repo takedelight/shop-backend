@@ -1,13 +1,20 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { hash, verify } from 'argon2';
 import { JwtPayload } from 'src/common/types/jwt-payload.type';
+import { StorageService } from 'src/infrastructure/storage/storage.service';
 import { UserModel, UserRole } from '../user/core/user.model';
 import {
   type IUserRepository,
   USER_REPOSITORY,
 } from '../user/core/user.repository.interface';
+import { OAuthUserDto } from '../user/dto/oauth-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -18,11 +25,14 @@ export interface AuthTokens {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @Inject(USER_REPOSITORY)
     private readonly userRepo: IUserRepository,
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
+    private readonly storageService: StorageService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthTokens> {
@@ -34,6 +44,28 @@ export class AuthService {
     const user = await this.userRepo.create(data);
 
     return this.generateTokens(user.id, user.role);
+  }
+
+  async upsert(dto: OAuthUserDto): Promise<AuthTokens> {
+    let avatarKey = dto.avatarKey;
+
+    if (avatarKey) {
+      this.logger.log(`Uploading OAuth avatar for ${dto.email}`);
+      avatarKey = await this.storageService.uploadFromUrl(avatarKey, 'avatars');
+    }
+
+    const user = UserModel.create({
+      email: dto.email,
+      username: dto.username,
+      avatarKey,
+      provider: 'google',
+      providerId: dto.providerId,
+    });
+
+    this.logger.log(`Upserting user: ${user.email}`);
+    const savedUser = await this.userRepo.upsert(user);
+
+    return this.generateTokens(savedUser.id, savedUser.role);
   }
 
   async login(dto: LoginDto): Promise<AuthTokens> {

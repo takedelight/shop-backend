@@ -101,6 +101,36 @@ export class StorageService {
     }
   }
 
+  async uploadFromUrl(url: string, folder: string): Promise<string> {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const contentType = response.headers.get('content-type') ?? 'image/jpeg';
+      const ext = contentType.includes('png') ? '.png' : '.jpg';
+      const key = `${folder}/${crypto.randomUUID()}${ext}`;
+
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: buffer,
+          ContentType: contentType,
+        }),
+      );
+
+      return key;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new InternalServerErrorException(
+        `Failed to upload from URL: ${message}`,
+      );
+    }
+  }
+
   async deleteFile(key: string): Promise<void> {
     try {
       await this.s3Client.send(

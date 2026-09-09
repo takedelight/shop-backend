@@ -8,6 +8,7 @@ export interface IUserRepository {
   findByEmail(email: string): Promise<UserModel>;
 
   create(user: UserModel): Promise<UserModel>;
+  upsert(user: UserModel): Promise<UserModel>;
   update(user: UserModel): Promise<void>;
 
   delete(id: string): Promise<void>;

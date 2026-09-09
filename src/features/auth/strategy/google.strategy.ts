@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-google-oauth20';
 import { IGoogleResponse } from 'src/common/types/google.respose';
+import { OAuthUserDto } from 'src/features/user/dto/oauth-user.dto';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -19,7 +20,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     accessToken: string,
     refreshToken: string,
     profile: IGoogleResponse,
-  ) {
+  ): OAuthUserDto {
     const { id, emails, photos, displayName } = profile;
 
     if (!emails?.length) {
@@ -29,11 +30,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     }
 
     return {
-      provider: 'google',
-      googleId: id,
+      providerId: id,
       username: displayName,
       email: emails[0].value,
-      avatarUrl: photos?.[0]?.value ?? null,
+      avatarKey: photos?.[0]?.value ?? null,
     };
   }
 }

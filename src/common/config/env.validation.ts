@@ -6,12 +6,14 @@ const envSchema = z.object({
     .default('development'),
   APP_PORT: z.coerce.number().default(5000),
   CORS_ORIGINS: z.string().transform((val) => JSON.parse(val) as string[]),
-
   ADMIN_EMAIL: z.email(),
   ADMIN_PASSWORD: z.string().min(6),
-
   DATABASE_URL: z.url(),
-
+  STORAGE_ENDPOINT: z.url(),
+  STORAGE_REGION: z.string(),
+  STORAGE_ACCESS_KEY: z.string().min(1),
+  STORAGE_SECRET_KEY: z.string().min(1),
+  STORAGE_BUCKET_NAME: z.string().min(1),
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_URL: z.string(),
   JWT_ACCESS_SECRET: z.string().min(32),
