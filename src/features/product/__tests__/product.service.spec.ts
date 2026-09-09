@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { PRODUCT_REPOSITORY } from '../core/product.repository.interface';
+import { REDIS_CLIENT } from 'src/infrastructure/redis/redis.module';
 import { ProductService } from '../product.service';
 
 describe('ProductService', () => {
@@ -12,6 +13,12 @@ describe('ProductService', () => {
     delete: jest.fn(),
   };
 
+  const mockRedis = {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
+    del: jest.fn().mockResolvedValue(1),
+  };
+
   let target: ProductService;
 
   beforeEach(async () => {
@@ -19,6 +26,7 @@ describe('ProductService', () => {
       providers: [
         ProductService,
         { provide: PRODUCT_REPOSITORY, useValue: mockProductRepository },
+        { provide: REDIS_CLIENT, useValue: mockRedis },
       ],
     }).compile();
 
@@ -27,6 +35,7 @@ describe('ProductService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    mockRedis.get.mockResolvedValue(null);
   });
 
   describe('findAll', () => {
@@ -80,6 +89,12 @@ describe('ProductService', () => {
         },
       ]);
       expect(mockProductRepository.findAll).toHaveBeenCalledTimes(1);
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        'products:all',
+        expect.any(String),
+        'EX',
+        300,
+      );
     });
 
     it('should return empty array when no products exist', async () => {
@@ -88,6 +103,22 @@ describe('ProductService', () => {
       const result = await target.findAll();
 
       expect(result).toEqual([]);
+    });
+
+    it('should return cached products when available', async () => {
+      const cachedProducts = [
+        {
+          id: '1',
+          name: 'Cached Product',
+          price: 50,
+        },
+      ];
+      mockRedis.get.mockResolvedValue(JSON.stringify(cachedProducts));
+
+      const result = await target.findAll();
+
+      expect(result).toEqual(cachedProducts);
+      expect(mockProductRepository.findAll).not.toHaveBeenCalled();
     });
   });
 
@@ -120,6 +151,26 @@ describe('ProductService', () => {
       expect(mockProductRepository.findById).toHaveBeenCalledWith(
         'product-123',
       );
+      expect(mockRedis.set).toHaveBeenCalledWith(
+        'product:product-123',
+        expect.any(String),
+        'EX',
+        300,
+      );
+    });
+
+    it('should return cached product when available', async () => {
+      const cachedProduct = {
+        id: 'product-123',
+        name: 'Cached Product',
+        price: 50,
+      };
+      mockRedis.get.mockResolvedValue(JSON.stringify(cachedProduct));
+
+      const result = await target.findById('product-123');
+
+      expect(result).toEqual(cachedProduct);
+      expect(mockProductRepository.findById).not.toHaveBeenCalled();
     });
 
     it('should propagate NotFoundException when not found', async () => {
@@ -169,6 +220,8 @@ describe('ProductService', () => {
       const createdModel = mockProductRepository.create.mock.calls[0][0];
       expect(createdModel.name).toBe('New Product');
       expect(createdModel.price).toBe(99);
+      expect(mockRedis.del).toHaveBeenCalledWith('products:all');
+      expect(mockRedis.del).toHaveBeenCalledWith('product:new-123');
     });
 
     it('should pass all fields to ProductModel.create', async () => {
@@ -235,6 +288,8 @@ describe('ProductService', () => {
       const updatedModel = mockProductRepository.update.mock.calls[0][0];
       expect(updatedModel.name).toBe('New Name');
       expect(updatedModel.price).toBe(100);
+      expect(mockRedis.del).toHaveBeenCalledWith('products:all');
+      expect(mockRedis.del).toHaveBeenCalledWith('product:product-123');
     });
 
     it('should merge partial dto with existing product data', async () => {
@@ -260,6 +315,8 @@ describe('ProductService', () => {
 
       expect(mockProductRepository.delete).toHaveBeenCalledWith('product-123');
       expect(mockProductRepository.delete).toHaveBeenCalledTimes(1);
+      expect(mockRedis.del).toHaveBeenCalledWith('products:all');
+      expect(mockRedis.del).toHaveBeenCalledWith('product:product-123');
     });
   });
 });
