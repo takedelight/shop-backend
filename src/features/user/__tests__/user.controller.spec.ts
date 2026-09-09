@@ -50,7 +50,7 @@ describe('UserController', () => {
       };
       mockUserService.findById.mockResolvedValue(user);
 
-      const result = await target.findById('user-123');
+      const result = await target.findById({ sub: 'user-123', role: 'user' });
 
       expect(result).toEqual(user);
       expect(mockUserService.findById).toHaveBeenCalledWith('user-123');
