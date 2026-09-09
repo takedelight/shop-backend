@@ -56,7 +56,7 @@ export class AuthController {
     const currentRefreshToken = req.cookies.refreshToken;
 
     if (!currentRefreshToken) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Refresh token is missing');
     }
 
     const tokens = await this.authService.refresh(currentRefreshToken);
