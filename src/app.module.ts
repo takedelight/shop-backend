@@ -6,10 +6,11 @@ import { validateEnv } from './common/config/env.validation';
 import { AuthGuard } from './common/guards/auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AuthModule } from './features/auth/auth.module';
+import { CategoryModule } from './features/category/category.module';
+import { ProductModule } from './features/product/product.module';
 import { UserModule } from './features/user/user.module';
 import { DrizzleModule } from './infrastructure/database/database.module';
 import { RedisModule } from './infrastructure/redis/redis.module';
-import { ProductModule } from './features/product/product.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ProductModule } from './features/product/product.module';
     UserModule,
     AuthModule,
     ProductModule,
+    CategoryModule,
   ],
   providers: [
     {

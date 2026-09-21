@@ -49,6 +49,7 @@ describe('ProductService', () => {
           imageKeys: ['key1'],
           inStock: true,
           stockQuantity: 10,
+          categoryId: 'cat-1',
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -60,6 +61,7 @@ describe('ProductService', () => {
           imageKeys: [],
           inStock: false,
           stockQuantity: 0,
+          categoryId: null,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -77,6 +79,7 @@ describe('ProductService', () => {
           imageKeys: ['key1'],
           inStock: true,
           stockQuantity: 10,
+          categoryId: 'cat-1',
         },
         {
           id: '2',
@@ -86,6 +89,7 @@ describe('ProductService', () => {
           imageKeys: [],
           inStock: false,
           stockQuantity: 0,
+          categoryId: null,
         },
       ]);
       expect(mockProductRepository.findAll).toHaveBeenCalledTimes(1);
@@ -132,6 +136,7 @@ describe('ProductService', () => {
         imageKeys: ['img1'],
         inStock: true,
         stockQuantity: 5,
+        categoryId: 'cat-1',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -147,6 +152,7 @@ describe('ProductService', () => {
         imageKeys: ['img1'],
         inStock: true,
         stockQuantity: 5,
+        categoryId: 'cat-1',
       });
       expect(mockProductRepository.findById).toHaveBeenCalledWith(
         'product-123',
@@ -191,6 +197,7 @@ describe('ProductService', () => {
         imageKeys: [],
         inStock: true,
         stockQuantity: 1,
+        categoryId: 'cat-1',
       };
       const createdProduct = {
         id: 'new-123',
@@ -200,6 +207,7 @@ describe('ProductService', () => {
         imageKeys: [],
         inStock: true,
         stockQuantity: 1,
+        categoryId: 'cat-1',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -215,11 +223,13 @@ describe('ProductService', () => {
         imageKeys: [],
         inStock: true,
         stockQuantity: 1,
+        categoryId: 'cat-1',
       });
       expect(mockProductRepository.create).toHaveBeenCalledTimes(1);
       const createdModel = mockProductRepository.create.mock.calls[0][0];
       expect(createdModel.name).toBe('New Product');
       expect(createdModel.price).toBe(99);
+      expect(createdModel.categoryId).toBe('cat-1');
       expect(mockRedis.del).toHaveBeenCalledWith('products:all');
       expect(mockRedis.del).toHaveBeenCalledWith('product:new-123');
     });
@@ -232,6 +242,7 @@ describe('ProductService', () => {
         imageKeys: ['k1', 'k2'],
         inStock: false,
         stockQuantity: 0,
+        categoryId: 'cat-2',
       };
       const createdProduct = {
         id: 'full-123',
@@ -241,6 +252,7 @@ describe('ProductService', () => {
         imageKeys: ['k1', 'k2'],
         inStock: false,
         stockQuantity: 0,
+        categoryId: 'cat-2',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -258,6 +270,7 @@ describe('ProductService', () => {
       expect(createdModel.imageKeys).toEqual(['k1', 'k2']);
       expect(createdModel.inStock).toBe(false);
       expect(createdModel.stockQuantity).toBe(0);
+      expect(createdModel.categoryId).toBe('cat-2');
     });
   });
 
@@ -270,6 +283,7 @@ describe('ProductService', () => {
       imageKeys: ['old'],
       inStock: true,
       stockQuantity: 10,
+      categoryId: 'cat-1',
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
     };
@@ -288,12 +302,13 @@ describe('ProductService', () => {
       const updatedModel = mockProductRepository.update.mock.calls[0][0];
       expect(updatedModel.name).toBe('New Name');
       expect(updatedModel.price).toBe(100);
+      expect(updatedModel.categoryId).toBe('cat-1');
       expect(mockRedis.del).toHaveBeenCalledWith('products:all');
       expect(mockRedis.del).toHaveBeenCalledWith('product:product-123');
     });
 
     it('should merge partial dto with existing product data', async () => {
-      const dto = { price: 200, inStock: false };
+      const dto = { price: 200, inStock: false, categoryId: 'cat-2' };
 
       await target.update('product-123', dto);
 
@@ -304,6 +319,7 @@ describe('ProductService', () => {
       expect(updatedModel.imageKeys).toEqual(['old']);
       expect(updatedModel.inStock).toBe(false);
       expect(updatedModel.stockQuantity).toBe(10);
+      expect(updatedModel.categoryId).toBe('cat-2');
     });
   });
 
