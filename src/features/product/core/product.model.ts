@@ -8,6 +8,7 @@ interface ProductProps {
   imageKeys: string[];
   inStock: boolean;
   stockQuantity: number;
+  categoryId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +20,7 @@ interface CreateProductProps {
   imageKeys?: string[];
   inStock?: boolean;
   stockQuantity?: number;
+  categoryId?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -37,6 +39,7 @@ export class ProductModel {
       imageKeys: props.imageKeys ?? [],
       inStock: props.inStock ?? true,
       stockQuantity: props.stockQuantity ?? 0,
+      categoryId: props.categoryId ?? null,
       createdAt: date,
       updatedAt: date,
     });
@@ -72,6 +75,10 @@ export class ProductModel {
 
   get stockQuantity(): number {
     return this.product.stockQuantity;
+  }
+
+  get categoryId(): string | null {
+    return this.product.categoryId;
   }
 
   get createdAt(): Date {

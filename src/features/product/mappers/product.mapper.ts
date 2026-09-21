@@ -18,6 +18,7 @@ export class ProductMapper {
       imageKeys: product.imageKeys,
       inStock: product.inStock,
       stockQuantity: product.stockQuantity,
+      categoryId: product.categoryId,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
@@ -32,6 +33,7 @@ export class ProductMapper {
       imageKeys: product.imageKeys,
       inStock: product.inStock,
       stockQuantity: product.stockQuantity,
+      categoryId: product.categoryId,
     };
   }
 }

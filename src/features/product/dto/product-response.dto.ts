@@ -6,4 +6,5 @@ export class ProductResponseDto {
   imageKeys: string[];
   inStock: boolean;
   stockQuantity: number;
+  categoryId: string | null;
 }

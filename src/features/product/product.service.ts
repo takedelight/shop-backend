@@ -81,6 +81,7 @@ export class ProductService {
       imageKeys: dto.imageKeys ?? existing.imageKeys,
       inStock: dto.inStock ?? existing.inStock,
       stockQuantity: dto.stockQuantity ?? existing.stockQuantity,
+      categoryId: dto.categoryId ?? existing.categoryId,
       createdAt: existing.createdAt,
       updatedAt: new Date(),
     });
