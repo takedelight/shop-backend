@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { SQL, and, eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from 'src/infrastructure/database/database.module';
@@ -12,9 +12,12 @@ import { CategoryMapper } from '../mappers/category.mapper';
 
 @Injectable()
 export class CategoryRepository implements ICategoryRepository {
+  private readonly logger = new Logger(CategoryRepository.name);
+
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
 
   async findAll(options?: Options): Promise<CategoryModel[]> {
+    this.logger.log('findAll');
     const conditions: SQL<unknown>[] = [];
 
     if (options?.filter?.name) {
@@ -44,6 +47,7 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async findById(id: string): Promise<CategoryModel> {
+    this.logger.log(`findById: ${id}`);
     const [row] = await this.db
       .select()
       .from(categories)
@@ -57,6 +61,7 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async findBySlug(slug: string): Promise<CategoryModel> {
+    this.logger.log(`findBySlug: ${slug}`);
     const [row] = await this.db
       .select()
       .from(categories)
@@ -70,6 +75,7 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async create(category: CategoryModel): Promise<CategoryModel> {
+    this.logger.log(`create: ${category.name}`);
     const [row] = await this.db
       .insert(categories)
       .values(CategoryMapper.toPersistence(category))
@@ -79,6 +85,7 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async update(category: CategoryModel): Promise<void> {
+    this.logger.log(`update: ${category.id}`);
     await this.db
       .update(categories)
       .set(CategoryMapper.toPersistence(category))
@@ -86,6 +93,7 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   async delete(id: string): Promise<void> {
+    this.logger.log(`delete: ${id}`);
     await this.db.delete(categories).where(eq(categories.id, id));
   }
 }
