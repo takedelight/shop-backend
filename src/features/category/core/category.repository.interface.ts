@@ -18,6 +18,7 @@ export interface ICategoryRepository {
   findAll(options?: Options): Promise<CategoryModel[]>;
   findById(id: string): Promise<CategoryModel>;
   findBySlug(slug: string): Promise<CategoryModel>;
+  countProductsByCategoryId(categoryId: string): Promise<number>;
 
   create(category: CategoryModel): Promise<CategoryModel>;
   update(category: CategoryModel): Promise<void>;

@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { SQL, and, eq } from 'drizzle-orm';
+import { SQL, and, count, eq } from 'drizzle-orm';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from 'src/infrastructure/database/database.module';
 import { CategoryModel } from '../core/category.model';
@@ -8,6 +8,7 @@ import {
   Options,
 } from '../core/category.repository.interface';
 import { categories } from '../entities/category.entity';
+import { products } from 'src/features/product/entities/product.entity';
 import { CategoryMapper } from '../mappers/category.mapper';
 
 @Injectable()
@@ -72,6 +73,16 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     return CategoryMapper.toDomain(row);
+  }
+
+  async countProductsByCategoryId(categoryId: string): Promise<number> {
+    this.logger.log(`countProductsByCategoryId: ${categoryId}`);
+    const [{ cnt }] = await this.db
+      .select({ cnt: count() })
+      .from(products)
+      .where(eq(products.categoryId, categoryId));
+
+    return Number(cnt);
   }
 
   async create(category: CategoryModel): Promise<CategoryModel> {

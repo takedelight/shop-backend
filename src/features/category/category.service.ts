@@ -30,7 +30,14 @@ export class CategoryService {
     }
 
     const categories = await this.categoryRepo.findAll();
-    const response = categories.map(CategoryMapper.toResponse);
+    const response = await Promise.all(
+      categories.map(async (cat) => {
+        const totalProducts = await this.categoryRepo.countProductsByCategoryId(
+          cat.id,
+        );
+        return CategoryMapper.toResponse(cat, totalProducts);
+      }),
+    );
 
     await this.redis.set(
       CATEGORIES_KEY,
@@ -51,7 +58,8 @@ export class CategoryService {
     }
 
     const category = await this.categoryRepo.findById(id);
-    const response = CategoryMapper.toResponse(category);
+    const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
+    const response = CategoryMapper.toResponse(category, totalProducts);
 
     await this.redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL);
 
@@ -60,14 +68,17 @@ export class CategoryService {
 
   async findBySlug(slug: string) {
     const category = await this.categoryRepo.findBySlug(slug);
-    return CategoryMapper.toResponse(category);
+    const totalProducts = await this.categoryRepo.countProductsByCategoryId(
+      category.id,
+    );
+    return CategoryMapper.toResponse(category, totalProducts);
   }
 
   async create(dto: CreateCategoryDto) {
     this.logger.log(`Creating category: ${dto.name}`);
     const data = CategoryModel.create(dto);
     const category = await this.categoryRepo.create(data);
-    const response = CategoryMapper.toResponse(category);
+    const response = CategoryMapper.toResponse(category, 0);
 
     await this.invalidateCache(response.id);
 
@@ -91,7 +102,8 @@ export class CategoryService {
     await this.categoryRepo.update(updated);
     await this.invalidateCache(id);
 
-    return CategoryMapper.toResponse(updated);
+    const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
+    return CategoryMapper.toResponse(updated, totalProducts);
   }
 
   async delete(id: string) {
