@@ -7,13 +7,15 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/is-public.decorator';
 import { SetRoles } from 'src/common/decorators/set-role.decorator';
+import { CategoryService } from './category.service';
+import { CategoryParamsDto } from './dto/category-params.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { CategoryService } from './category.service';
 
 @ApiTags('Category')
 @Controller('category')
@@ -24,9 +26,9 @@ export class CategoryController {
 
   @Public()
   @Get()
-  findAll() {
+  findAll(@Query() queryParams: CategoryParamsDto) {
     this.logger.log('GET /category');
-    return this.categoryService.findAll();
+    return this.categoryService.findAll(queryParams);
   }
 
   @SetRoles('admin')

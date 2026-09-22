@@ -7,6 +7,7 @@ import { CategoryService } from '../category.service';
 describe('CategoryService', () => {
   const mockCategoryRepository = {
     findAll: jest.fn(),
+    count: jest.fn().mockResolvedValue(0),
     findById: jest.fn(),
     findBySlug: jest.fn(),
     countProductsByCategoryId: jest.fn().mockResolvedValue(0),
@@ -38,7 +39,10 @@ describe('CategoryService', () => {
   afterEach(() => {
     jest.clearAllMocks();
     mockRedis.get.mockResolvedValue(null);
+    mockRedis.set.mockResolvedValue('OK');
     mockCategoryRepository.countProductsByCategoryId.mockResolvedValue(0);
+    mockCategoryRepository.count.mockResolvedValue(0);
+    mockCategoryRepository.findAll.mockReset();
   });
 
   describe('findAll', () => {

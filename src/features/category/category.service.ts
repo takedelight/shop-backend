@@ -9,6 +9,7 @@ import {
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoryMapper } from './mappers/category.mapper';
+import { CategoryParamsDto } from './dto/category-params.dto';
 
 const CACHE_TTL = 5 * 60;
 const CATEGORIES_KEY = 'categories:all';
@@ -23,30 +24,36 @@ export class CategoryService {
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
-  async findAll() {
-    const cached = await this.redis.get(CATEGORIES_KEY);
-    if (cached) {
-      return JSON.parse(cached);
+  async findAll(options: CategoryParamsDto) {
+    const hasParams = Object.values(options ?? {}).some(
+      (value) => value !== undefined && value !== null && value !== '',
+    );
+
+    if (!hasParams) {
+      const cached = await this.redis.get(CATEGORIES_KEY);
+      if (cached) {
+        return JSON.parse(cached);
+      }
     }
 
-    const categories = await this.categoryRepo.findAll();
-    const response = await Promise.all(
-      categories.map(async (cat) => {
-        const totalProducts = await this.categoryRepo.countProductsByCategoryId(
-          cat.id,
-        );
-        return CategoryMapper.toResponse(cat, totalProducts);
-      }),
-    );
+    const categories = await this.categoryRepo.findAll(options);
+    const totalItems = await this.categoryRepo.count(options);
 
-    await this.redis.set(
-      CATEGORIES_KEY,
-      JSON.stringify(response),
-      'EX',
-      CACHE_TTL,
-    );
+    const result = {
+      items: categories.map((cat) => CategoryMapper.toResponse(cat, 0)),
+      totalItems,
+    };
 
-    return response;
+    if (!hasParams) {
+      await this.redis.set(
+        CATEGORIES_KEY,
+        JSON.stringify(result),
+        'EX',
+        CACHE_TTL,
+      );
+    }
+
+    return result;
   }
 
   async findById(id: string) {
@@ -58,8 +65,8 @@ export class CategoryService {
     }
 
     const category = await this.categoryRepo.findById(id);
-    const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
-    const response = CategoryMapper.toResponse(category, totalProducts);
+    // const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
+    const response = CategoryMapper.toResponse(category, 0);
 
     await this.redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL);
 
@@ -68,10 +75,10 @@ export class CategoryService {
 
   async findBySlug(slug: string) {
     const category = await this.categoryRepo.findBySlug(slug);
-    const totalProducts = await this.categoryRepo.countProductsByCategoryId(
-      category.id,
-    );
-    return CategoryMapper.toResponse(category, totalProducts);
+    // const totalProducts = await this.categoryRepo.countProductsByCategoryId(
+    //   category.id,
+    // );
+    return CategoryMapper.toResponse(category, 0);
   }
 
   async create(dto: CreateCategoryDto) {
@@ -102,8 +109,8 @@ export class CategoryService {
     await this.categoryRepo.update(updated);
     await this.invalidateCache(id);
 
-    const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
-    return CategoryMapper.toResponse(updated, totalProducts);
+    // const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
+    return CategoryMapper.toResponse(updated, 0);
   }
 
   async delete(id: string) {

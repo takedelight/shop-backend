@@ -8,7 +8,6 @@ import {
   Options,
 } from '../core/category.repository.interface';
 import { categories } from '../entities/category.entity';
-import { products } from 'src/features/product/entities/product.entity';
 import { CategoryMapper } from '../mappers/category.mapper';
 
 @Injectable()
@@ -17,22 +16,29 @@ export class CategoryRepository implements ICategoryRepository {
 
   constructor(@Inject(DRIZZLE) private readonly db: NodePgDatabase) {}
 
-  async findAll(options?: Options): Promise<CategoryModel[]> {
-    this.logger.log('findAll');
+  private buildConditions(
+    options?: Pick<Options, 'name' | 'slug' | 'isActive'>,
+  ): SQL<unknown>[] {
     const conditions: SQL<unknown>[] = [];
 
-    if (options?.filter?.name) {
-      conditions.push(eq(categories.name, options.filter.name));
+    if (options?.name) {
+      conditions.push(eq(categories.name, options.name));
     }
 
-    if (options?.filter?.slug) {
-      conditions.push(eq(categories.slug, options.filter.slug));
+    if (options?.slug) {
+      conditions.push(eq(categories.slug, options.slug));
     }
 
-    if (options?.filter?.isActive !== undefined) {
-      conditions.push(eq(categories.isActive, options.filter.isActive));
+    if (options?.isActive !== undefined) {
+      conditions.push(eq(categories.isActive, options.isActive));
     }
 
+    return conditions;
+  }
+
+  async findAll(options?: Options): Promise<CategoryModel[]> {
+    this.logger.log('findAll');
+    const conditions = this.buildConditions(options);
     const whereCondition =
       conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -41,10 +47,24 @@ export class CategoryRepository implements ICategoryRepository {
       .from(categories)
       .where(whereCondition)
       .orderBy(categories.createdAt)
-      .limit(options?.pagination?.limit ?? 1000)
-      .offset(options?.pagination?.offset ?? 0);
+      .limit(options?.limit ?? 1000)
+      .offset(options?.page ?? 0);
 
     return rows.map((row) => CategoryMapper.toDomain(row));
+  }
+
+  async count(options?: Omit<Options, 'limit' | 'page'>): Promise<number> {
+    this.logger.log('count');
+    const conditions = this.buildConditions(options);
+    const whereCondition =
+      conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [row] = await this.db
+      .select({ value: count() })
+      .from(categories)
+      .where(whereCondition);
+
+    return Number(row?.value ?? 0);
   }
 
   async findById(id: string): Promise<CategoryModel> {
@@ -73,16 +93,6 @@ export class CategoryRepository implements ICategoryRepository {
     }
 
     return CategoryMapper.toDomain(row);
-  }
-
-  async countProductsByCategoryId(categoryId: string): Promise<number> {
-    this.logger.log(`countProductsByCategoryId: ${categoryId}`);
-    const [{ cnt }] = await this.db
-      .select({ cnt: count() })
-      .from(products)
-      .where(eq(products.categoryId, categoryId));
-
-    return Number(cnt);
   }
 
   async create(category: CategoryModel): Promise<CategoryModel> {
