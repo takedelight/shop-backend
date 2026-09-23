@@ -15,6 +15,7 @@ export interface ICategoryRepository {
   count(options?: Omit<Options, 'limit' | 'page'>): Promise<number>;
   findById(id: string): Promise<CategoryModel>;
   findBySlug(slug: string): Promise<CategoryModel>;
+  countProductsByCategoryId(categoryId: string): Promise<number>;
 
   create(category: CategoryModel): Promise<CategoryModel>;
   update(category: CategoryModel): Promise<void>;

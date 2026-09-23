@@ -39,8 +39,17 @@ export class CategoryService {
     const categories = await this.categoryRepo.findAll(options);
     const totalItems = await this.categoryRepo.count(options);
 
+    const items = await Promise.all(
+      categories.map(async (cat) => {
+        const totalProducts = await this.categoryRepo.countProductsByCategoryId(
+          cat.id,
+        );
+        return CategoryMapper.toResponse(cat, totalProducts);
+      }),
+    );
+
     const result = {
-      items: categories.map((cat) => CategoryMapper.toResponse(cat, 0)),
+      items,
       totalItems,
     };
 
@@ -65,8 +74,8 @@ export class CategoryService {
     }
 
     const category = await this.categoryRepo.findById(id);
-    // const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
-    const response = CategoryMapper.toResponse(category, 0);
+    const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
+    const response = CategoryMapper.toResponse(category, totalProducts);
 
     await this.redis.set(cacheKey, JSON.stringify(response), 'EX', CACHE_TTL);
 
@@ -75,10 +84,10 @@ export class CategoryService {
 
   async findBySlug(slug: string) {
     const category = await this.categoryRepo.findBySlug(slug);
-    // const totalProducts = await this.categoryRepo.countProductsByCategoryId(
-    //   category.id,
-    // );
-    return CategoryMapper.toResponse(category, 0);
+    const totalProducts = await this.categoryRepo.countProductsByCategoryId(
+      category.id,
+    );
+    return CategoryMapper.toResponse(category, totalProducts);
   }
 
   async create(dto: CreateCategoryDto) {
@@ -109,8 +118,8 @@ export class CategoryService {
     await this.categoryRepo.update(updated);
     await this.invalidateCache(id);
 
-    // const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
-    return CategoryMapper.toResponse(updated, 0);
+    const totalProducts = await this.categoryRepo.countProductsByCategoryId(id);
+    return CategoryMapper.toResponse(updated, totalProducts);
   }
 
   async delete(id: string) {

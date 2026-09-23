@@ -8,6 +8,7 @@ import {
   Options,
 } from '../core/category.repository.interface';
 import { categories } from '../entities/category.entity';
+import { products } from 'src/features/product/entities/product.entity';
 import { CategoryMapper } from '../mappers/category.mapper';
 
 @Injectable()
@@ -63,6 +64,16 @@ export class CategoryRepository implements ICategoryRepository {
       .select({ value: count() })
       .from(categories)
       .where(whereCondition);
+
+    return Number(row?.value ?? 0);
+  }
+
+  async countProductsByCategoryId(categoryId: string): Promise<number> {
+    this.logger.log(`countProductsByCategoryId: ${categoryId}`);
+    const [row] = await this.db
+      .select({ value: count() })
+      .from(products)
+      .where(eq(products.categoryId, categoryId));
 
     return Number(row?.value ?? 0);
   }
