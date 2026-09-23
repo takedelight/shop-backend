@@ -7,4 +7,6 @@ export class CategoryResponseDto {
   slug: string | null;
   isActive: boolean;
   products?: ProductResponseDto[];
+  totalProducts: number;
+  createdAt: Date;
 }

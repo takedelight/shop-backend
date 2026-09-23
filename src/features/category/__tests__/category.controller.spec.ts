@@ -35,9 +35,10 @@ describe('CategoryController', () => {
       ];
       mockCategoryService.findAll.mockResolvedValue(categories);
 
-      const result = await target.findAll();
+      const result = await target.findAll({});
 
       expect(result).toEqual(categories);
+      expect(mockCategoryService.findAll).toHaveBeenCalledWith({});
       expect(mockCategoryService.findAll).toHaveBeenCalledTimes(1);
     });
   });

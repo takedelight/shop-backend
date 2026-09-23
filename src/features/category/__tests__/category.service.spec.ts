@@ -7,8 +7,10 @@ import { CategoryService } from '../category.service';
 describe('CategoryService', () => {
   const mockCategoryRepository = {
     findAll: jest.fn(),
+    count: jest.fn().mockResolvedValue(0),
     findById: jest.fn(),
     findBySlug: jest.fn(),
+    countProductsByCategoryId: jest.fn().mockResolvedValue(0),
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
@@ -37,10 +39,14 @@ describe('CategoryService', () => {
   afterEach(() => {
     jest.clearAllMocks();
     mockRedis.get.mockResolvedValue(null);
+    mockRedis.set.mockResolvedValue('OK');
+    mockCategoryRepository.countProductsByCategoryId.mockResolvedValue(0);
+    mockCategoryRepository.count.mockResolvedValue(0);
+    mockCategoryRepository.findAll.mockReset();
   });
 
   describe('findAll', () => {
-    it('should return mapped categories', async () => {
+    it('should return mapped categories with totalProducts', async () => {
       const mockCategories = [
         {
           id: '1',
@@ -62,26 +68,44 @@ describe('CategoryService', () => {
         },
       ];
       mockCategoryRepository.findAll.mockResolvedValue(mockCategories);
+      mockCategoryRepository.count.mockResolvedValue(2);
+      mockCategoryRepository.countProductsByCategoryId
+        .mockResolvedValueOnce(5)
+        .mockResolvedValueOnce(3);
 
-      const result = await target.findAll();
+      const result = await target.findAll({});
 
-      expect(result).toEqual([
-        {
-          id: '1',
-          name: 'Electronics',
-          icon: 'cpu',
-          slug: 'electronics',
-          isActive: true,
-        },
-        {
-          id: '2',
-          name: 'Books',
-          icon: 'book',
-          slug: 'books',
-          isActive: false,
-        },
-      ]);
+      expect(result).toEqual({
+        items: [
+          {
+            id: '1',
+            name: 'Electronics',
+            icon: 'cpu',
+            slug: 'electronics',
+            isActive: true,
+            totalProducts: 5,
+            createdAt: mockCategories[0].createdAt,
+          },
+          {
+            id: '2',
+            name: 'Books',
+            icon: 'book',
+            slug: 'books',
+            isActive: false,
+            totalProducts: 3,
+            createdAt: mockCategories[1].createdAt,
+          },
+        ],
+        totalItems: 2,
+      });
       expect(mockCategoryRepository.findAll).toHaveBeenCalledTimes(1);
+      expect(mockCategoryRepository.count).toHaveBeenCalledWith({});
+      expect(
+        mockCategoryRepository.countProductsByCategoryId,
+      ).toHaveBeenCalledWith('1');
+      expect(
+        mockCategoryRepository.countProductsByCategoryId,
+      ).toHaveBeenCalledWith('2');
       expect(mockRedis.set).toHaveBeenCalledWith(
         'categories:all',
         expect.any(String),
@@ -93,30 +117,34 @@ describe('CategoryService', () => {
     it('should return empty array when no categories exist', async () => {
       mockCategoryRepository.findAll.mockResolvedValue([]);
 
-      const result = await target.findAll();
+      const result = await target.findAll({});
 
-      expect(result).toEqual([]);
+      expect(result).toEqual({ items: [], totalItems: 0 });
     });
 
     it('should return cached categories when available', async () => {
-      const cachedCategories = [
-        {
-          id: '1',
-          name: 'Cached Category',
-          icon: 'tag',
-        },
-      ];
-      mockRedis.get.mockResolvedValue(JSON.stringify(cachedCategories));
+      const cachedResult = {
+        items: [
+          {
+            id: '1',
+            name: 'Cached Category',
+            icon: 'tag',
+            totalProducts: 0,
+          },
+        ],
+        totalItems: 1,
+      };
+      mockRedis.get.mockResolvedValue(JSON.stringify(cachedResult));
 
-      const result = await target.findAll();
+      const result = await target.findAll({});
 
-      expect(result).toEqual(cachedCategories);
+      expect(result).toEqual(cachedResult);
       expect(mockCategoryRepository.findAll).not.toHaveBeenCalled();
     });
   });
 
   describe('findById', () => {
-    it('should return mapped category by id', async () => {
+    it('should return mapped category by id with totalProducts', async () => {
       const mockCategory = {
         id: 'cat-123',
         name: 'Electronics',
@@ -127,6 +155,7 @@ describe('CategoryService', () => {
         updatedAt: new Date(),
       };
       mockCategoryRepository.findById.mockResolvedValue(mockCategory);
+      mockCategoryRepository.countProductsByCategoryId.mockResolvedValue(10);
 
       const result = await target.findById('cat-123');
 
@@ -136,8 +165,13 @@ describe('CategoryService', () => {
         icon: 'cpu',
         slug: 'electronics',
         isActive: true,
+        totalProducts: 10,
+        createdAt: mockCategory.createdAt,
       });
       expect(mockCategoryRepository.findById).toHaveBeenCalledWith('cat-123');
+      expect(
+        mockCategoryRepository.countProductsByCategoryId,
+      ).toHaveBeenCalledWith('cat-123');
       expect(mockRedis.set).toHaveBeenCalledWith(
         'category:cat-123',
         expect.any(String),
@@ -151,6 +185,7 @@ describe('CategoryService', () => {
         id: 'cat-123',
         name: 'Cached Category',
         icon: 'tag',
+        totalProducts: 5,
       };
       mockRedis.get.mockResolvedValue(JSON.stringify(cachedCategory));
 
@@ -172,7 +207,7 @@ describe('CategoryService', () => {
   });
 
   describe('findBySlug', () => {
-    it('should return mapped category by slug', async () => {
+    it('should return mapped category by slug with totalProducts', async () => {
       const mockCategory = {
         id: 'cat-123',
         name: 'Electronics',
@@ -183,6 +218,7 @@ describe('CategoryService', () => {
         updatedAt: new Date(),
       };
       mockCategoryRepository.findBySlug.mockResolvedValue(mockCategory);
+      mockCategoryRepository.countProductsByCategoryId.mockResolvedValue(7);
 
       const result = await target.findBySlug('electronics');
 
@@ -192,10 +228,15 @@ describe('CategoryService', () => {
         icon: 'cpu',
         slug: 'electronics',
         isActive: true,
+        totalProducts: 7,
+        createdAt: mockCategory.createdAt,
       });
       expect(mockCategoryRepository.findBySlug).toHaveBeenCalledWith(
         'electronics',
       );
+      expect(
+        mockCategoryRepository.countProductsByCategoryId,
+      ).toHaveBeenCalledWith('cat-123');
     });
 
     it('should propagate NotFoundException when slug not found', async () => {
@@ -210,7 +251,7 @@ describe('CategoryService', () => {
   });
 
   describe('create', () => {
-    it('should create category and return result', async () => {
+    it('should create category and return result with totalProducts: 0', async () => {
       const dto = {
         name: 'Electronics',
         icon: 'cpu',
@@ -235,6 +276,8 @@ describe('CategoryService', () => {
         icon: 'cpu',
         slug: 'electronics',
         isActive: true,
+        totalProducts: 0,
+        createdAt: createdCategory.createdAt,
       });
       expect(mockCategoryRepository.create).toHaveBeenCalledTimes(1);
       const createdModel = mockCategoryRepository.create.mock.calls[0][0];
@@ -289,17 +332,22 @@ describe('CategoryService', () => {
     beforeEach(() => {
       mockCategoryRepository.findById.mockResolvedValue(existingCategory);
       mockCategoryRepository.update.mockResolvedValue(undefined);
+      mockCategoryRepository.countProductsByCategoryId.mockResolvedValue(4);
     });
 
-    it('should update category with merged data', async () => {
+    it('should update category with merged data and totalProducts', async () => {
       const dto = { name: 'New Name' };
 
-      await target.update('cat-123', dto);
+      const result = await target.update('cat-123', dto);
 
       expect(mockCategoryRepository.update).toHaveBeenCalledTimes(1);
       const updatedModel = mockCategoryRepository.update.mock.calls[0][0];
       expect(updatedModel.name).toBe('New Name');
       expect(updatedModel.icon).toBe('old-icon');
+      expect(result.totalProducts).toBe(4);
+      expect(
+        mockCategoryRepository.countProductsByCategoryId,
+      ).toHaveBeenCalledWith('cat-123');
       expect(mockRedis.del).toHaveBeenCalledWith('categories:all');
       expect(mockRedis.del).toHaveBeenCalledWith('category:cat-123');
     });

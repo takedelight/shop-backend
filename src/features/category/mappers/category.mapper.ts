@@ -21,13 +21,18 @@ export class CategoryMapper {
     };
   }
 
-  static toResponse(category: CategoryModel): CategoryResponseDto {
+  static toResponse(
+    category: CategoryModel,
+    totalProducts: number,
+  ): CategoryResponseDto {
     return {
       id: category.id,
       name: category.name,
       icon: category.icon,
       slug: category.slug,
       isActive: category.isActive,
+      totalProducts,
+      createdAt: category.createdAt,
     };
   }
 }
